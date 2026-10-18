@@ -1,0 +1,122 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Catálogo | TiendaUT</title>
+</head>
+
+<body>
+  <main>
+    <h1>Catálogo</h1>
+
+    <p>
+      Carrito:
+      <span data-testid="contador-carrito">0</span>
+      productos
+    </p>
+
+    <label for="buscar">Buscar producto</label>
+    <input
+      type="text"
+      id="buscar"
+      placeholder="Buscar producto"
+    >
+
+    <button id="vaciar" type="button">Vaciar carrito</button>
+
+    <p id="mensaje" role="alert" hidden></p>
+
+    <ul id="lista">
+      <li>Cargando...</li>
+    </ul>
+  </main>
+
+  <script>
+    let carrito = 0;
+    let productos = [];
+
+    const lista = document.getElementById('lista');
+    const contador = document.querySelector(
+      '[data-testid="contador-carrito"]'
+    );
+    const buscador = document.getElementById('buscar');
+    const mensaje = document.getElementById('mensaje');
+
+    // Mostrar los productos y aplicar el filtro de búsqueda.
+    function pintar(filtro = '') {
+      lista.innerHTML = '';
+
+      const coincidencias = productos.filter(producto =>
+        producto.nombre
+          .toLowerCase()
+          .includes(filtro.toLowerCase())
+      );
+
+      if (coincidencias.length === 0) {
+        lista.innerHTML = '<li>No se encontraron productos.</li>';
+        return;
+      }
+
+      coincidencias.forEach(producto => {
+        const elemento = document.createElement('li');
+        elemento.dataset.testid = 'producto';
+
+        const nombre = document.createElement('h2');
+        nombre.textContent = producto.nombre;
+
+        const precio = document.createElement('span');
+        precio.textContent = `$${producto.precio}`;
+
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.textContent = 'Agregar al carrito';
+
+        boton.addEventListener('click', () => {
+          carrito++;
+          contador.textContent = String(carrito);
+        });
+
+        elemento.appendChild(nombre);
+        elemento.appendChild(precio);
+        elemento.appendChild(boton);
+
+        lista.appendChild(elemento);
+      });
+    }
+
+    // Cargar los productos desde la API.
+    async function cargarProductos() {
+      try {
+        const respuesta = await fetch('/api/productos');
+
+        if (!respuesta.ok) {
+          throw new Error('Error al cargar los productos');
+        }
+
+        productos = await respuesta.json();
+
+        mensaje.hidden = true;
+        pintar(buscador.value);
+      } catch (error) {
+        lista.innerHTML = '';
+        mensaje.textContent = 'No pudimos cargar los productos';
+        mensaje.hidden = false;
+      }
+    }
+
+    // Filtrar mientras se escribe.
+    buscador.addEventListener('input', evento => {
+      pintar(evento.target.value);
+    });
+
+    // Vaciar el carrito y actualizar el contador.
+    document.getElementById('vaciar').addEventListener('click', () => {
+      carrito = 0;
+      contador.textContent = '0';
+    });
+
+    cargarProductos();
+  </script>
+</body>
+</html>
